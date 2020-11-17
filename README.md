@@ -1,2 +1,2 @@
-Scott Logic Hacathon
+Scott Logic Hackathon
 # Java_the_hutt
