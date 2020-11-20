@@ -26,6 +26,14 @@ import java.util.Map.Entry;
 //decide to go to the nearest food object that isn't out of bounds
 //stop multiple players from going to the same food item
 //fighting
+//Fighting
+// - Run away if outnumbered or equal
+// - Attack if we outnumber enemy
+// - Attack spawnpoint if enemy not within range of it
+// - If Home spawnpoint destroyed
+//      - Stop collecting food
+//      - Group up players
+//          - Hunt enemies and enemy spawnpoint
 
 
 public class ExampleBot extends Bot {
