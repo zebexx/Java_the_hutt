@@ -47,6 +47,9 @@ public class ExampleBot extends Bot {
             if (isMyPlayer(player) && player.getPosition().equals()) {
                 playerDirectionHashMap.put(playerID, Direction.random());
             }
+            else if (isMyPlayer()) {
+                playerDirectionHashMap.put(playerID, Direction.oldDirection());
+            }
         }
     }
 
@@ -122,18 +125,24 @@ public class ExampleBot extends Bot {
     }
     
     private void collectFood(GameState gameState) {
+        ArrayList<javax.swing.text.Position> foodAsigned = new ArrayList<>();
         for (Player player : gameState.getPlayers()) {
             if (isMyPlayer(player)) {
                 for (Collectable food : gameState.getCollectables()) {
                     int distanceToFood = gameState.getMap().distance(player.getPosition(), food.getPosition());
-                    if (distanceToFood < 10) {
-                        Optional<Direction> direction = gameState.getMap()
-                                .directionsTowards(player.getPosition(), food.getPosition()).findFirst();
-                        if (direction.isPresent()) {
-                            playerDirectionHashMap.put(player.getId(), direction.get());
-                        }
+                    Position closestFood = null;
+                    int closestDistance = 11;
+                    if (distanceToFood < 10 && !foodAsigned.contains(food.getPosition()) && distanceToFood < closestDistance) {
+                        closestFood = food.getPosition();
                     }
                 }
+                if (!(closestFood == null)) {
+                    Optional<Direction> direction = gameState.getMap().directionsTowards(player.getPosition(), food.getPosition()).findFirst();
+                    if (direction.isPresent()) {
+                        playerDirectionHashMap.put(player.getId(), closestFood);
+                    }
+                }
+                
             }
         }
     }
@@ -142,20 +151,22 @@ public class ExampleBot extends Bot {
         for(Player player1 : gameState.getPlayers()) {
             if (isMyPlayer(player1)) {
                 for (Player player2 : gameState.getPlayers()) {
-                    int distanceToPlayer = gameState.getMap().distance(player1.getPosition(), player2.getPosition());
-                    int closestDistanceToPlayer = 11;
-                    Position closestPlayerPosition = null;
-                    if (distanceToPlayer < 10 && distanceToPlayer<closestDistanceToPlayer) {
-                        closestDistanceToPlayer = distanceToPlayer;
-                        closestPlayerPosition = player2.getPosition();
+                        if (isMyPlayer(player2)){
+                        int distanceToPlayer = gameState.getMap().distance(player1.getPosition(), player2.getPosition());
+                        int closestDistanceToPlayer = 11;
+                        Position closestPlayerPosition = null;
+                        if (distanceToPlayer < 10 && distanceToPlayer<closestDistanceToPlayer) {
+                            closestDistanceToPlayer = distanceToPlayer;
+                            closestPlayerPosition = player2.getPosition();
 
+                        }
                     }
                 }
                 if(!closestPlayerPosition.isNull()) {
                     Optional<Direction> direction = gameState.getMap().directionTowards(
                             player1.getPosition(), player2.getPosition()).findFirst();
                     if (direction.isPresent()) {
-                        playerDirectionHashMap.put(player1.getId(), direction.get());
+                        playerDirectionHashMap.put(player1.getId(), direction.get().opposite());
                     }
                 }
             }
