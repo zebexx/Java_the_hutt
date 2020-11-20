@@ -101,16 +101,21 @@ public class ExampleBot extends Bot {
                 moves.add(new MoveImpl(playerID, direction));
                 Position newPosition = gameState.getMap().getNeighbour(player.getPosition(), direction);
                 nextPositions.add(newPosition);
-            } else if (player != null && canMove(gameState, player, direction.getOpposite())) {
+            } else if (player != null) {
                 // Player needs to switch to opposite direction to move
-                moves.add(new MoveImpl(playerID, direction.getOpposite()));
-                Position newPosition = gameState.getMap().getNeighbour(player.getPosition(), direction.getOpposite());
+                correctDirection = null;
+                while(correctnewDirection == null) {
+                    newDirection = Direction.random();
+                    if(newDirection != direction) {
+                        correctDirection = newDirection;
+                    }
+                }
+
+                moves.add(new MoveImpl(playerID, correctDirection));
+                Position newPosition = gameState.getMap().getNeighbour(player.getPosition(), correctDirection);
                 nextPositions.add(newPosition);
-            } else if (player != null && !nextPositions.isEmpty()) {
-                // Player cannot move
-                Position oldPosition = nextPositions.get(nextPositions.size()-1);
-                nextPositions.add(oldPosition);
-            }
+                playerDirectionHashMap.put(playerID, correctDirection);
+            } 
         }
         return moves;
     }
@@ -196,4 +201,6 @@ public class ExampleBot extends Bot {
     private boolean isMySpawnPoint(SpawnPoint spawnPoint) {
         return true;
     }
+
+    
 }
