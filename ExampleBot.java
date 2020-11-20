@@ -21,7 +21,7 @@ import java.util.Set;
 import java.util.Map.Entry;
 
 //TODO: 
-//Player u sernames? xX_Noob_bot_Pwner69_Xx 
+//Player usernames? xX_Noob_bot_Pwner69_Xx 
 //Teleportation????? 
 //Cheatcodes???? 
 //was there a rule about not creating more class files? 
