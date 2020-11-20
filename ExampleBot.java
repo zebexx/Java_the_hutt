@@ -44,10 +44,23 @@ public class ExampleBot extends Bot {
     private void moveRandomly(GameState gameState) {
         for (Player player : gameState.getPlayers()) {
             Id playerID = player.getId();
-            if (isMyPlayer(player) && player.getPosition().equals()) {
-                playerDirectionHashMap.put(playerID, Direction.random());
+            if (isMyPlayer(player) && !playerDirectionHashMap.get(playerID).isNull()) {
+                boolean diagonal = false;
+
+                while(!diagonal) {
+                    Direction newDirection = Direction.random();
+                    if (    newDirection == Direction.NORTHEAST ||
+                            newDirection == Direction.NORTHWEST ||
+                            newDirection == Direction.SOUTHEAST ||
+                            newDirection == Direction.SOUTHWEST) {
+                        diagonal = true;
+                    } else {
+                        newDirection = Direction.random();
+                    }
+                }
+                playerDirectionHashMap.put(playerID, newDirection);
             }
-            else if (isMyPlayer()) {
+            else if (isMyPlayer(player)) {
                 playerDirectionHashMap.put(playerID, Direction.oldDirection());
             }
         }
@@ -151,7 +164,7 @@ public class ExampleBot extends Bot {
         for(Player player1 : gameState.getPlayers()) {
             if (isMyPlayer(player1)) {
                 for (Player player2 : gameState.getPlayers()) {
-                        if (isMyPlayer(player2)){
+                        if (isMyPlayer(player2) && !(playerDirectionHashMap.get(player2.getId()).equals(playerDirectionHashMap.get(player1.getId())))){
                         int distanceToPlayer = gameState.getMap().distance(player1.getPosition(), player2.getPosition());
                         int closestDistanceToPlayer = 11;
                         Position closestPlayerPosition = null;
