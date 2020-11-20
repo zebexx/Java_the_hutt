@@ -25,7 +25,14 @@ import java.util.Map.Entry;
 //make players go in another direction if there's no food around
 //decide to go to the nearest food object that isn't out of bounds
 //stop multiple players from going to the same food item
-//fighting
+//Fighting
+// - Run away if outnumbered or equal
+// - Attack if we outnumber enemy
+// - Attack spawnpoint if enemy not within range of it
+// - If Home spawnpoint destroyed
+//      - Stop collecting food
+//      - Group up players
+//          - Hunt enemies and enemy spawnpoint
 
 
 public class ExampleBot extends Bot {
@@ -47,7 +54,7 @@ public class ExampleBot extends Bot {
             if (isMyPlayer(player) && player.getPosition().equals()) {
                 playerDirectionHashMap.put(playerID, Direction.random());
             }
-            else if (isMyPlayer()) {
+            else if (isMyPlayer(player)) {
                 playerDirectionHashMap.put(playerID, Direction.oldDirection());
             }
         }
@@ -174,5 +181,9 @@ public class ExampleBot extends Bot {
     }
     private boolean isMySpawnPoint(SpawnPoint spawnPoint) {
         return true;
+    }
+
+    private void fight(GameState gamestate) {
+
     }
 }
