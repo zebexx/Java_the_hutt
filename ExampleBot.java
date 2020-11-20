@@ -44,8 +44,24 @@ public class ExampleBot extends Bot {
     private void moveRandomly(GameState gameState) {
         for (Player player : gameState.getPlayers()) {
             Id playerID = player.getId();
-            if (isMyPlayer(player) && player.getPosition().equals()) {
-                playerDirectionHashMap.put(playerID, Direction.random());
+            if (isMyPlayer(player) && !playerDirectionHashMap.get(playerID).isNull()) {
+                boolean diagonal = false;
+
+                while(!diagonal) {
+                    Direction newDirection = Direction.random();
+                    if (    newDirection == Direction.NORTHEAST ||
+                            newDirection == Direction.NORTHWEST ||
+                            newDirection == Direction.SOUTHEAST ||
+                            newDirection == Direction.SOUTHWEST) {
+                        diagonal = true;
+                    } else {
+                        newDirection = Direction.random();
+                    }
+                }
+                playerDirectionHashMap.put(playerID, newDirection);
+            }
+            else if (isMyPlayer(player)) {
+                playerDirectionHashMap.put(playerID, Direction.oldDirection());
             }
         }
     }
@@ -64,6 +80,7 @@ public class ExampleBot extends Bot {
     @Override
     public void initialise(GameState gameState) {
         playerDirectionHashMap = new HashMap<>();
+        //spawnpoint
     }
 
     private List<Move> extractMoves(GameState gameState) {
@@ -121,23 +138,54 @@ public class ExampleBot extends Bot {
     }
     
     private void collectFood(GameState gameState) {
+        ArrayList<javax.swing.text.Position> foodAsigned = new ArrayList<>();
         for (Player player : gameState.getPlayers()) {
             if (isMyPlayer(player)) {
                 for (Collectable food : gameState.getCollectables()) {
                     int distanceToFood = gameState.getMap().distance(player.getPosition(), food.getPosition());
-                    if (distanceToFood < 10) {
-                        Optional<Direction> direction = gameState.getMap()
-                                .directionsTowards(player.getPosition(), food.getPosition()).findFirst();
-                        if (direction.isPresent()) {
-                            playerDirectionHashMap.put(player.getId(), direction.get());
+                    Position closestFood = null;
+                    int closestDistance = 11;
+                    if (distanceToFood < 10 && !foodAsigned.contains(food.getPosition()) && distanceToFood < closestDistance) {
+                        closestFood = food.getPosition();
+                    }
+                }
+                if (!(closestFood == null)) {
+                    Optional<Direction> direction = gameState.getMap().directionsTowards(player.getPosition(), food.getPosition()).findFirst();
+                    if (direction.isPresent()) {
+                        playerDirectionHashMap.put(player.getId(), closestFood);
+                    }
+                }
+                
+            }
+        }
+    }
+
+    private void avoidPlayers(GameState gameState) {
+        for(Player player1 : gameState.getPlayers()) {
+            if (isMyPlayer(player1)) {
+                for (Player player2 : gameState.getPlayers()) {
+                        if (isMyPlayer(player2) && !(playerDirectionHashMap.get(player2.getId()).equals(playerDirectionHashMap.get(player1.getId())))){
+                        int distanceToPlayer = gameState.getMap().distance(player1.getPosition(), player2.getPosition());
+                        int closestDistanceToPlayer = 11;
+                        Position closestPlayerPosition = null;
+                        if (distanceToPlayer < 10 && distanceToPlayer<closestDistanceToPlayer) {
+                            closestDistanceToPlayer = distanceToPlayer;
+                            closestPlayerPosition = player2.getPosition();
+
                         }
+                    }
+                }
+                if(!closestPlayerPosition.isNull()) {
+                    Optional<Direction> direction = gameState.getMap().directionTowards(
+                            player1.getPosition(), player2.getPosition()).findFirst();
+                    if (direction.isPresent()) {
+                        playerDirectionHashMap.put(player1.getId(), direction.get().opposite());
                     }
                 }
             }
         }
     }
-
     private boolean isMySpawnPoint(SpawnPoint spawnPoint) {
-
+        return true;
     }
 }
