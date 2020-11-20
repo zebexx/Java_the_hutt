@@ -64,6 +64,7 @@ public class ExampleBot extends Bot {
     @Override
     public void initialise(GameState gameState) {
         playerDirectionHashMap = new HashMap<>();
+        //spawnpoint
     }
 
     private List<Move> extractMoves(GameState gameState) {
@@ -137,7 +138,30 @@ public class ExampleBot extends Bot {
         }
     }
 
-    private boolean isMySpawnPoint(SpawnPoint spawnPoint) {
+    private void avoidPlayers(GameState gameState) {
+        for(Player player1 : gameState.getPlayers()) {
+            if (isMyPlayer(player1)) {
+                for (Player player2 : gameState.getPlayers()) {
+                    int distanceToPlayer = gameState.getMap().distance(player1.getPosition(), player2.getPosition());
+                    int closestDistanceToPlayer = 11;
+                    Position closestPlayerPosition = null;
+                    if (distanceToPlayer < 10 && distanceToPlayer<closestDistanceToPlayer) {
+                        closestDistanceToPlayer = distanceToPlayer;
+                        closestPlayerPosition = player2.getPosition();
 
+                    }
+                }
+                if(!closestPlayerPosition.isNull()) {
+                    Optional<Direction> direction = gameState.getMap().directionTowards(
+                            player1.getPosition(), player2.getPosition()).findFirst();
+                    if (direction.isPresent()) {
+                        playerDirectionHashMap.put(player1.getId(), direction.get());
+                    }
+                }
+            }
+        }
+    }
+    private boolean isMySpawnPoint(SpawnPoint spawnPoint) {
+        return true;
     }
 }
