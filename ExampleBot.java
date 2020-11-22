@@ -15,6 +15,7 @@ import com.scottlogic.hackathon.game.Route;
 
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -25,6 +26,7 @@ import java.util.Map.Entry;
 //Teleportation????? 
 //Cheatcodes???? 
 //was there a rule about not creating more class files? 
+
 //Improve exploration 
 // - I think avoid teammates might be causing more problems than it solves, players get stuck in an area just avoiding allies and not doing anything
 // - Maybe change avoid players to only apply when they are far enough away from spawnpoint.
@@ -53,7 +55,9 @@ public class ExampleBot extends Bot {
     private HashMap<Id, Direction> playerDirectionHashMap;
     private GameStateLogger.GameStateLoggerBuilder gameStateLoggerBuilder;
     private List<Position> nextPositions;
+    private Set<SpawnPoint> spawns;
     private SpawnPoint home;
+    private SpawnPoint enemy;
 
     public ExampleBot(String name) {
         super(name);
@@ -77,7 +81,7 @@ public class ExampleBot extends Bot {
         }
     }
 
-    @Override 
+    @Override
     public List<Move> makeMoves(final GameState gameState) {
         nextPositions = new ArrayList<>();
         removeDeadPlayers(gameState);
@@ -92,7 +96,7 @@ public class ExampleBot extends Bot {
     @Override
     public void initialise(GameState gameState) {
         playerDirectionHashMap = new HashMap<>();
-        findHomeSpawnPoint(gameState);
+        findSpawnPoint(gameState);
     }
 
     private List<Move> extractMoves(GameState gameState) {
@@ -133,6 +137,7 @@ public class ExampleBot extends Bot {
     }
 
     private boolean canMove(final GameState gameState, final Player player, final Direction direction) {
+        // checks new position will not result in a collision with other players or water
         Set<Position> outOfBounds = gameState.getOutOfBoundsPositions();
         Position newPosition = gameState.getMap().getNeighbour(player.getPosition(), direction);
         if (!nextPositions.contains(newPosition) && !outOfBounds.contains(newPosition)) {
@@ -156,7 +161,7 @@ public class ExampleBot extends Bot {
     }
 
     private void collectFood(GameState gameState) {
-        ArrayList<Position> claimedFoodPositions = new ArrayList<>();
+        ArrayList<Position> claimedFoodPositions = new ArrayList<>(); //list of food which has been asigned to a player
         for (Player player : gameState.getPlayers()) {
             if (isMyPlayer(player)) {
                 Position closestFood = null;
@@ -220,8 +225,8 @@ public class ExampleBot extends Bot {
                         if (player1.getId().equals(player2.getId())) {
                             break;
                         } else if (distanceToPlayer < 10 && distanceToPlayer < closestDistanceToPlayer) {
-                            if (playerDirectionHashMap.get(player1.getId()).equals(playerDirectionHashMap
-                                    .get(player2.getId()))) {
+                            if (playerDirectionHashMap.get(player1.getId())
+                                    .equals(playerDirectionHashMap.get(player2.getId()))) {
                                 break;
                             }
                             closestDistanceToPlayer = gameState.getMap().distance(player1.getPosition(),
@@ -241,13 +246,41 @@ public class ExampleBot extends Bot {
         }
     }
 
-    private void findHomeSpawnPoint(GameState gameState) {
+    private void spawnpoints(GameState gameState) {
         Set<SpawnPoint> spawnPoints = gameState.getSpawnPoints();
-        for (SpawnPoint spawnPoint : spawnPoints) {
+        this.spawns = spawnPoints;
+    }
+
+    private void findSpawnPoint(GameState gameState) {
+        Set<SpawnPoint> spawnPoints = gameState.getSpawnPoints();
+        for (SpawnPoint spawnPoint: spawnPoints) {
             Id owner = spawnPoint.getOwner();
+            
             if (owner.equals(getId())) {
                 this.home = spawnPoint;
             }
+            else if (!owner.equals(getId())) {
+                this.enemy = spawnPoint;
+            }
         }
+    }
+
+    private Optional<Route> makeRoute(GameState gameState, Player player, Position futurePosition) {
+        Position currentPosition = player.getPosition();
+        Set<Position> avoid = Collections.emptySet();
+        Optional<Route> route = gameState.getMap().findRoute(player.getPosition(), futurePosition, avoid);
+        avoid = gameState.getOutOfBoundsPositions();
+        boolean invalidRoute = true;
+        if (route.isPresent()) {
+            invalidRoute = route.get().collides(avoid);
+            if (invalidRoute) {
+                route.empty();
+            }
+        }
+        return route;
+    }
+
+    private void fighting(GameState gameState) {
+        
     }
 }
