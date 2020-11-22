@@ -25,17 +25,28 @@ import java.util.Map.Entry;
 //Teleportation????? 
 //Cheatcodes???? 
 //was there a rule about not creating more class files? 
-//improve exploration 
-//fighting 
+//Improve exploration 
+// - I think avoid teammates might be causing more problems than it solves, players get stuck in an area just avoiding allies and not doing anything
+// - Maybe change avoid players to only apply when they are far enough away from spawnpoint.
+// - Change extractMoves to only give diagonal directions.
+// - Improve moveRandomly to distribute directions more evenly (bad to for players to randomly all go in the same direction) maybe just for first move
+// - Route
+//      - Implement Route class, make sure we're avoiding Stackoverflow errors. Not using route when near water etc
+//      - Maybe add route to Hashmap somehow so that we dont have to calculate a new route every turn and players can follow a route to completion 
+// - Maybe dont go near water if players can see it, not just dont walk into the water if its on the nextPosition
+
+//Fighting 
 // - run away in bad fight 
-// - run towards enemy if have more allies 
+// - run towards enemy if we have more allies 
 // - attack enemy spawn point if no enemy players are on it 
 // - if home is destroyed 
 //      - stop collecting food 
 //      - group up and hunt enemies/enemy spawn point 
 // - defend spawnpoint? 
 // - blocking enemies from areas? eg blocking gap between water (depends on map) 
-//destroy other spawnpoint 
+// - form small squads when near enemies?
+// - form squad after a number of turns without finding food?
+// - destroy other spawnpoint 
 
 public class ExampleBot extends Bot {
 
