@@ -12,6 +12,7 @@ import com.scottlogic.hackathon.game.Position;
 import com.scottlogic.hackathon.game.Collectable;
 import com.scottlogic.hackathon.game.SpawnPoint;
 import com.scottlogic.hackathon.game.Route;
+import com.scottlogic.hackathon.game.GameGeometry;
 
 import java.util.HashMap;
 import java.util.ArrayList;
@@ -20,6 +21,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Random;
+import java.util.stream.*;
 
 //TODO: 
 //Player usernames? xX_Noob_bot_Pwner69_Xx 
@@ -107,7 +110,7 @@ public class ExampleBot extends Bot {
 
         if (!playerRouteHashMap.isEmpty()) {
             ArrayList<Id> removeFromHashMap = new ArrayList<>();
-            //Iterator it = playerRouteHashMap.entrySet().iterator();
+
             for (Entry<Id, Route> item : playerRouteHashMap.entrySet()) {
                 Id playerID = item.getKey();
                 Route route = item.getValue();
@@ -118,7 +121,6 @@ public class ExampleBot extends Bot {
                     playerDirectionHashMap.put(playerID, newDirection.get());
                 } else {
                     removeFromHashMap.add(playerID);
-                    //playerRouteHashMap.remove(playerID);
                 }
             }
             for (Id id : removeFromHashMap) {
@@ -278,6 +280,55 @@ public class ExampleBot extends Bot {
         if (this.home != null && !gameState.getSpawnPointAt(home.getPosition()).isPresent()) {
             home = null;
         }
+    }
+
+    private ArrayList<Position> routePositions(GameState gameState, Player player) {
+        Position playerP = player.getPosition();
+        ArrayList<Position> surroundingPositions = gameState.getMap().getSurroundingPositions(playerP, 9)
+                .collect(Collectors.toCollection(ArrayList::new));
+        ArrayList<Position> possiblePositions = new ArrayList<>();
+        for (Position p : surroundingPositions) {
+            int distance = gameState.getMap().distance(playerP, p);
+            // keep only the positions 9 spaces away
+            if (distance < 9) {
+                possiblePositions.add(p);
+            }
+        }
+        return possiblePositions;
+    }
+
+    private Optional<Route> randomRoute(GameState gameState, Player player, ArrayList<Position> possiblePositions) {
+        Optional<Route> newRoute = makeRoute(gameState, player, player.getPosition()); // initialise newRoute
+        boolean invalidRoute = true;
+        while (invalidRoute) { // search for a route that doesn't cross water
+            Random random = new Random();
+            int rIndex = (random.nextInt(possiblePositions.size()));
+            newRoute = makeRoute(gameState, player, possiblePositions.get(rIndex));
+            if (!newRoute.isEmpty()) {
+                invalidRoute = false;
+            }
+        }
+        return newRoute;
+    }
+
+    private Optional<Route> getSimilarRoute(GameState gameState, Player player, ArrayList<Position> possiblePositions) {
+        Position oldPosition = player.getPosition();
+        Direction oldDirection = playerRouteHashMap.get(player.getId());
+        for (Position p : possiblePositions) {
+            Optional<Direction> newDirection = directionTowards(oldPosition, p);
+            if (directionsTowards(oldPosition, p).contains(oldDirection))
+        }
+        Optional<Route> newRoute = makeRoute(gameState, player, player.getPosition()); // initialise newRoute
+        boolean invalidRoute = true;
+        while (invalidRoute) { // search for a route that doesn't cross water
+            Random random = new Random();
+            int rIndex = (random.nextInt(possiblePositions.size()));
+            newRoute = makeRoute(gameState, player, possiblePositions.get(rIndex));
+            if (!newRoute.isEmpty() ) {
+                invalidRoute = false;
+            }
+        }
+        return newRoute;
     }
 
     private Optional<Route> makeRoute(GameState gameState, Player player, Position futurePosition) {
