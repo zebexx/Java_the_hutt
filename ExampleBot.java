@@ -67,7 +67,6 @@ public class ExampleBot extends Bot {
         diagonalDirections.add(Direction.SOUTHWEST);
         diagonalDirections.add(Direction.NORTHWEST);
         for (Player player : gameState.getPlayers()) {
-            Id playerID = player.getId();
             boolean needNewDirection = !playerDirectionHashMap.containsKey(player.getId());
             if (home != null) {
                 needNewDirection = player.getPosition().equals(home.getPosition())
@@ -76,7 +75,6 @@ public class ExampleBot extends Bot {
             if (isMyPlayer(player) && needNewDirection) {
                 int index = counter % 4;
                 ++counter;
-                System.out.println(counter);
                 Direction newDirection = diagonalDirections.get(index);
                 playerDirectionHashMap.put(player.getId(), newDirection);
             // } else if (isMyPlayer(player) && !needNewDirection) {
@@ -92,10 +90,15 @@ public class ExampleBot extends Bot {
         removeDeadPlayers(gameState);
         removeFood(gameState);
         findSpawnPoint(gameState);
+        for (Entry<Player, Position> food: claimedFoodHashMap.entrySet()){
+            System.out.println("Player Postion: " + food.getKey().getPosition() + "\n" + "Food Position: " + food.getValue());
+        }
+        System.out.println();
         gameStateLoggerBuilder.process(gameState);
         moveRandomly(gameState);
         fighting(gameState);
         collectFood(gameState);
+        System.out.println(claimedFoodHashMap.size());
         attackEnemySpawnPoint(gameState);
         List<Move> moves = extractMoves(gameState);
         return moves;
@@ -223,7 +226,6 @@ public class ExampleBot extends Bot {
         }
     }
     
-    
     private boolean checkRoute(GameState gameState, Player player, Position futurePosition) {
         Set<Position> avoid = Collections.emptySet();
         Optional<Route> route = gameState.getMap().findRoute(player.getPosition(), futurePosition, avoid);
@@ -240,7 +242,6 @@ public class ExampleBot extends Bot {
         return spawn.getOwner().equals(getId());
     }
 
-    
     private void findSpawnPoint(GameState gameState) {
         Set<SpawnPoint> spawnPoints = gameState.getSpawnPoints();
         for (SpawnPoint spawnPoint : spawnPoints) {
