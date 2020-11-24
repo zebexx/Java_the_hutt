@@ -48,7 +48,7 @@ public class ExampleBot extends Bot {
 
     private HashMap<Id, Direction> playerDirectionHashMap;
     private HashMap<Player, ArrayList<Player>> teamHashMap;
-    private HashMap<Player, Position> claimedFoodHashMap;
+    private HashMap<Id, Position> claimedFoodHashMap;
     private GameStateLogger.GameStateLoggerBuilder gameStateLoggerBuilder;
     private List<Position> nextPositions;
     private SpawnPoint home;
@@ -90,15 +90,13 @@ public class ExampleBot extends Bot {
         removeDeadPlayers(gameState);
         removeFood(gameState);
         findSpawnPoint(gameState);
-        for (Entry<Player, Position> food: claimedFoodHashMap.entrySet()){
-            System.out.println("Player Postion: " + food.getKey().getPosition() + "\n" + "Food Position: " + food.getValue());
+        for (Entry<Id, Position> food: claimedFoodHashMap.entrySet()){
+            System.out.println("Player Postion: " + findPlayerByID(gameState, food.getKey()).getPosition() + "\n" + "Food Position: " + food.getValue());
         }
-        System.out.println();
         gameStateLoggerBuilder.process(gameState);
         moveRandomly(gameState);
         fighting(gameState);
         collectFood(gameState);
-        System.out.println(claimedFoodHashMap.size());
         attackEnemySpawnPoint(gameState);
         List<Move> moves = extractMoves(gameState);
         return moves;
@@ -150,19 +148,20 @@ public class ExampleBot extends Bot {
                     team.getValue().remove(p);
                 }
             }
+            claimedFoodHashMap.remove(p.getId());
         }
     }
     
     private void removeFood(GameState gameState) {
-        ArrayList<Player> toRemove = new ArrayList<>();
-        for (Entry<Player, Position> food : claimedFoodHashMap.entrySet()) {
+        ArrayList<Id> toRemove = new ArrayList<>();
+        for (Entry<Id, Position> food : claimedFoodHashMap.entrySet()) {
             Position foodP = food.getValue();
             if (gameState.getCollectableAt(foodP).isEmpty()) {
                 toRemove.add(food.getKey());
             }
         }
-        for (Player p : toRemove) {
-            claimedFoodHashMap.remove(p);
+        for (Id id : toRemove) {
+            claimedFoodHashMap.remove(id);
         }
 
     }
@@ -192,7 +191,7 @@ public class ExampleBot extends Bot {
 
     private void collectFood(GameState gameState) {
         for (Player player : gameState.getPlayers()) {
-            if (isMyPlayer(player) && !claimedFoodHashMap.containsKey(player)) {
+            if (isMyPlayer(player) && !claimedFoodHashMap.containsKey(player.getId())) {
                 Position closestFood = null;
                 int closestDistanceToFood = 11;
                 for (Collectable food : gameState.getCollectables()) {
@@ -208,7 +207,7 @@ public class ExampleBot extends Bot {
                 }
 
                 if (!(closestFood == null)) {
-                    claimedFoodHashMap.put(player, closestFood);
+                    claimedFoodHashMap.put(player.getId(), closestFood);
                     Optional<Direction> direction = gameState.getMap()
                             .directionsTowards(player.getPosition(), closestFood).findFirst();
 
@@ -218,7 +217,7 @@ public class ExampleBot extends Bot {
                 }
             } else if (isMyPlayer(player)) {
                 Optional<Direction> direction = gameState.getMap()
-                        .directionsTowards(player.getPosition(), claimedFoodHashMap.get(player)).findFirst();
+                        .directionsTowards(player.getPosition(), claimedFoodHashMap.get(player.getId())).findFirst();
                 if (direction.isPresent()) {
                     playerDirectionHashMap.replace(player.getId(), direction.get());
                 }
