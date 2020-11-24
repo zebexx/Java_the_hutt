@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.Map.Entry;
 
@@ -43,6 +44,7 @@ public class ExampleBot extends Bot {
     private GameStateLogger.GameStateLoggerBuilder gameStateLoggerBuilder;
     private List<Position> nextPositions;
     private SpawnPoint home;
+    private SpawnPoint enemy;
 
     public ExampleBot(String name) {
         super(name);
@@ -53,12 +55,15 @@ public class ExampleBot extends Bot {
         for (Player player : gameState.getPlayers()) {
             Id playerID = player.getId();
             if (isMyPlayer(player) && !playerDirectionHashMap.containsKey(playerID)) {
-                Direction newDirection = Direction.random();
-                while (newDirection == Direction.NORTH || newDirection == Direction.SOUTH
-                        || newDirection == Direction.EAST || newDirection == Direction.WEST) {
-                    newDirection = Direction.random();
-                }
-                playerDirectionHashMap.put(playerID, Direction.random());
+                ArrayList<Direction> diagonalDirections = new ArrayList<>();
+                diagonalDirections.add(Direction.NORTHEAST);
+                diagonalDirections.add(Direction.NORTHWEST);
+                diagonalDirections.add(Direction.SOUTHEAST);
+                diagonalDirections.add(Direction.SOUTHWEST);
+                Random random = new Random();
+                int rIndex = (random.nextInt(diagonalDirections.size()));
+                Direction newDirection = diagonalDirections.get(rIndex);
+                playerDirectionHashMap.put(playerID, newDirection);
             } else if (isMyPlayer(player)) {
                 Direction oldDirection = playerDirectionHashMap.get(playerID);
                 playerDirectionHashMap.put(playerID, oldDirection);
@@ -66,14 +71,16 @@ public class ExampleBot extends Bot {
         }
     }
 
-    @Override 
+    @Override
     public List<Move> makeMoves(final GameState gameState) {
         nextPositions = new ArrayList<>();
         removeDeadPlayers(gameState);
+        findSpawnPoint(gameState);
         gameStateLoggerBuilder.withPlayers().withOutOfBounds().process(gameState);
         moveRandomly(gameState);
         avoidPlayers(gameState);
         collectFood(gameState);
+        fighting(gameState);
         List<Move> moves = extractMoves(gameState);
         return moves;
     }
@@ -81,7 +88,7 @@ public class ExampleBot extends Bot {
     @Override
     public void initialise(GameState gameState) {
         playerDirectionHashMap = new HashMap<>();
-        findHomeSpawnPoint(gameState);
+    
     }
 
     private List<Move> extractMoves(GameState gameState) {
@@ -96,13 +103,15 @@ public class ExampleBot extends Bot {
                 nextPositions.add(newPosition);
             } else if (player != null) {
                 // Player needs to switch to another random direction to move
-                boolean sameDirection = true;
-                Direction newDirection = Direction.random();
-                while (sameDirection) {
-                    if (!newDirection.equals(direction) && canMove(gameState, player, newDirection)) {
-                        sameDirection = false;
-                    } else {
-                        newDirection = Direction.random();
+                List<Direction> allDirections = Direction.randomisedValues();
+                allDirections.remove(direction);
+                Direction newDirection = direction; // initialise newDirection
+                for (Direction d : allDirections) {
+                    if (direction.equals(d)) {
+                        allDirections.remove(d);
+                    } else if (canMove(gameState, player, d)) {
+                        newDirection = d;
+                        break;
                     }
                 }
                 moves.add(new MoveImpl(playerID, newDirection));
@@ -209,8 +218,8 @@ public class ExampleBot extends Bot {
                         if (player1.getId().equals(player2.getId())) {
                             break;
                         } else if (distanceToPlayer < 10 && distanceToPlayer < closestDistanceToPlayer) {
-                            if (playerDirectionHashMap.get(player1.getId()).equals(playerDirectionHashMap
-                                    .get(player2.getId()))) {
+                            if (playerDirectionHashMap.get(player1.getId())
+                                    .equals(playerDirectionHashMap.get(player2.getId()))) {
                                 break;
                             }
                             closestDistanceToPlayer = gameState.getMap().distance(player1.getPosition(),
@@ -229,13 +238,76 @@ public class ExampleBot extends Bot {
             }
         }
     }
+    
+    private boolean isMySpawn(SpawnPoint spawn) {
+        return spawn.getOwner().equals(getId());
+    }
 
-    private void findHomeSpawnPoint(GameState gameState) {
+    
+    private void findSpawnPoint(GameState gameState) {
         Set<SpawnPoint> spawnPoints = gameState.getSpawnPoints();
         for (SpawnPoint spawnPoint : spawnPoints) {
-            Id owner = spawnPoint.getOwner();
-            if (owner.equals(getId())) {
+            if (isMySpawn(spawnPoint)) {
                 this.home = spawnPoint;
+            } else {
+                this.enemy = spawnPoint;
+            }
+        }
+
+        if (this.enemy != null && !gameState.getSpawnPointAt(enemy.getPosition()).isPresent()) {
+            enemy = null;
+        }
+
+        if (this.home != null && !gameState.getSpawnPointAt(home.getPosition()).isPresent()) {
+            home = null;
+        }
+    }
+    
+    private void fighting(GameState gameState) {
+        for (Player player : gameState.getPlayers()) {
+            if (isMyPlayer(player)) {
+                // destroys enemy spawnpoint
+                if (enemy != null) {
+                    if (gameState.getMap().distance(enemy.getPosition(), player.getPosition()) < 10) {
+                        
+                        Optional<Direction> direction = gameState.getMap().directionsTowards(player.getPosition(),
+                                enemy.getPosition()).findFirst();
+                        if (direction.isPresent()) {
+                            playerDirectionHashMap.put(player.getId(), direction.get());
+                        }
+                    }
+                }
+
+                for (Player enemyP : gameState.getPlayers()) {
+                    if (!isMyPlayer(enemyP)
+                            && gameState.getMap().distance(enemyP.getPosition(), player.getPosition()) < 10) {
+                        boolean alone = true;
+                        int distanceToEnemy = gameState.getMap().distance(enemyP.getPosition(), player.getPosition());
+
+                        for (Player friend : gameState.getPlayers()) {
+                            if (isMyPlayer(friend) && gameState.getMap().distance(enemyP.getPosition(),
+                                    friend.getPosition()) <= distanceToEnemy) {
+                                alone = false;
+                                break;
+                            }
+                        }
+
+                        // TODO: make sure that both the player & the friend go towards the same enemy +
+                        // case where there's more than one enemy
+                        // check that they can both go towards the enemy (route)
+
+                        if (alone) {
+                            Optional<Direction> away = gameState.getMap()
+                                    .directionsAwayFrom(player.getPosition(), enemyP.getPosition()).findFirst();
+                            playerDirectionHashMap.put(player.getId(), away.get());
+                        } else {
+                            Optional<Direction> attackDirection = gameState.getMap()
+                                    .directionsTowards(player.getPosition(), enemyP.getPosition()).findFirst();
+                            playerDirectionHashMap.put(player.getId(), attackDirection.get());
+                            
+                        }
+                    }
+                }
             }
         }
     }
