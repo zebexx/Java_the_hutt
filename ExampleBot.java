@@ -12,8 +12,6 @@ import com.scottlogic.hackathon.game.Position;
 import com.scottlogic.hackathon.game.Collectable;
 import com.scottlogic.hackathon.game.SpawnPoint;
 
-
-
 import com.scottlogic.hackathon.game.Route;
 
 import java.util.HashMap;
@@ -77,11 +75,19 @@ public class ExampleBot extends Bot {
                 ++counter;
                 Direction newDirection = diagonalDirections.get(index);
                 playerDirectionHashMap.put(player.getId(), newDirection);
-            // } else if (isMyPlayer(player) && !needNewDirection) {
-            //     Direction oldDirection = playerDirectionHashMap.get(playerID);
-            //     playerDirectionHashMap.put(playerID, oldDirection);
+                // } else if (isMyPlayer(player) && !needNewDirection) {
+                // Direction oldDirection = playerDirectionHashMap.get(playerID);
+                // playerDirectionHashMap.put(playerID, oldDirection);
             }
         }
+    }
+    
+    private Position futurePosition(GameState gameState, Position start, Direction direction, int distance) {
+        Position position = start;
+        for (int i = 0; i < distance; i++) {
+            position = gameState.getMap().getNeighbour(position, direction);
+        }
+        return position;
     }
 
     @Override
@@ -90,9 +96,6 @@ public class ExampleBot extends Bot {
         removeDeadPlayers(gameState);
         removeFood(gameState);
         findSpawnPoint(gameState);
-        for (Entry<Id, Position> food: claimedFoodHashMap.entrySet()){
-            System.out.println("Player Postion: " + findPlayerByID(gameState, food.getKey()).getPosition() + "\n" + "Food Position: " + food.getValue());
-        }
         gameStateLoggerBuilder.process(gameState);
         moveRandomly(gameState);
         fighting(gameState);
@@ -124,15 +127,15 @@ public class ExampleBot extends Bot {
                 List<Direction> allDirections = Direction.randomisedValues();
                 Direction newDirection = direction; // initialise newDirection
                 for (Direction d : allDirections) {
-                    if (canMove(gameState, player, d)) {
+                    if (canMove(gameState, player, d) && checkRoute(gameState, player, futurePosition(gameState, player.getPosition(), d, 5))) {
                         newDirection = d;
                         break;
                     }
                 }
                 moves.add(new MoveImpl(playerID, newDirection));
                 playerDirectionHashMap.replace(playerID, newDirection);
-                Position newPosition = gameState.getMap().getNeighbour(player.getPosition(), newDirection);
-                nextPositions.add(newPosition);
+                Position newPosition1 = gameState.getMap().getNeighbour(player.getPosition(), newDirection);
+                nextPositions.add(newPosition1);
             }
         }
         return moves;
@@ -151,7 +154,7 @@ public class ExampleBot extends Bot {
             claimedFoodHashMap.remove(p.getId());
         }
     }
-    
+
     private void removeFood(GameState gameState) {
         ArrayList<Id> toRemove = new ArrayList<>();
         for (Entry<Id, Position> food : claimedFoodHashMap.entrySet()) {
@@ -224,7 +227,7 @@ public class ExampleBot extends Bot {
             }
         }
     }
-    
+
     private boolean checkRoute(GameState gameState, Player player, Position futurePosition) {
         Set<Position> avoid = Collections.emptySet();
         Optional<Route> route = gameState.getMap().findRoute(player.getPosition(), futurePosition, avoid);
@@ -236,7 +239,7 @@ public class ExampleBot extends Bot {
             return false;
         }
     }
-    
+
     private boolean isMySpawn(SpawnPoint spawn) {
         return spawn.getOwner().equals(getId());
     }
@@ -259,7 +262,7 @@ public class ExampleBot extends Bot {
             home = null;
         }
     }
-    
+
     private void attackEnemySpawnPoint(GameState gameState) {
         for (Player player : gameState.getPlayers()) {
             if (isMyPlayer(player) && enemy != null) {
@@ -277,7 +280,7 @@ public class ExampleBot extends Bot {
     private void fighting(GameState gameState) {
         for (Player player : gameState.getPlayers()) {
             boolean isInTeam = false;
-            for(Entry<Player, ArrayList<Player>> team : teamHashMap.entrySet()) {
+            for (Entry<Player, ArrayList<Player>> team : teamHashMap.entrySet()) {
                 ArrayList<Player> teamPlayers = team.getValue();
                 if (teamPlayers.contains(player)) {
                     isInTeam = true;
@@ -287,23 +290,29 @@ public class ExampleBot extends Bot {
 
                 for (Player enemyP : gameState.getPlayers()) {
                     // get the closest enemy player?
+                    int distanceToEnemy = 10;
+                    Player target = null;
                     if (!isMyPlayer(enemyP)
-                            && gameState.getMap().distance(enemyP.getPosition(), player.getPosition()) < 10
+                            && gameState.getMap().distance(enemyP.getPosition(), player.getPosition()) < distanceToEnemy
                             && checkRoute(gameState, player, enemyP.getPosition())) {
-                        boolean alone = true;
-                        int distanceToEnemy = gameState.getMap().distance(enemyP.getPosition(), player.getPosition());
+                        distanceToEnemy = gameState.getMap().distance(enemyP.getPosition(), player.getPosition());
+                        target = enemyP;
+                    }
 
+                    boolean alone = true;
+                    
+                    if (target != null) {
                         for (Player friend : gameState.getPlayers()) {
-                            if (isMyPlayer(friend) 
+                            if (isMyPlayer(friend)
                                     && gameState.getMap().distance(enemyP.getPosition(),
                                             friend.getPosition()) == distanceToEnemy
-                                    && !teamHashMap.containsKey(enemyP)) { //there isn't already a team targeting that enemy
+                                    && !teamHashMap.containsKey(enemyP)) { // there isn't already a team targeting that enemy
                                 alone = false;
                                 ArrayList<Player> newTeam = new ArrayList<>();
                                 newTeam.add(player);
                                 newTeam.add(friend);
                                 teamHashMap.put(enemyP, newTeam);
-                            } else if (isMyPlayer(friend) 
+                            } else if (isMyPlayer(friend)
                                     && gameState.getMap().distance(enemyP.getPosition(),
                                             friend.getPosition()) == distanceToEnemy
                                     && teamHashMap.containsKey(enemyP)) {
@@ -313,7 +322,7 @@ public class ExampleBot extends Bot {
                                 existingTeam.add(player);
                             }
                         }
-                        
+
                         // Check to see how many enemies are close together
                         // case where there's more than one enemy
 
@@ -321,20 +330,20 @@ public class ExampleBot extends Bot {
                             Optional<Direction> away = gameState.getMap()
                                     .directionsAwayFrom(player.getPosition(), enemyP.getPosition()).findFirst();
                             playerDirectionHashMap.replace(player.getId(), away.get());
-                        } 
-                            
-                        
+                        }
                     }
-                }
+                }        
             }
         }
+        
         for (Entry<Player, ArrayList<Player>> team : teamHashMap.entrySet()) {
             Player target = team.getKey();
             ArrayList<Player> teamPlayers = team.getValue();
             for (Player Tplayer : teamPlayers) {
                 Position enemyPos = target.getPosition();
                 Position playerPos = Tplayer.getPosition();
-                Optional<Direction> directionEnemy = gameState.getMap().directionsTowards(playerPos, enemyPos).findFirst(); 
+                Optional<Direction> directionEnemy = gameState.getMap().directionsTowards(playerPos, enemyPos)
+                        .findFirst();
                 playerDirectionHashMap.replace(Tplayer.getId(), directionEnemy.get());
             }
         }
