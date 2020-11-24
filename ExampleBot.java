@@ -12,8 +12,6 @@ import com.scottlogic.hackathon.game.Position;
 import com.scottlogic.hackathon.game.Collectable;
 import com.scottlogic.hackathon.game.SpawnPoint;
 
-
-
 import com.scottlogic.hackathon.game.Route;
 
 import java.util.HashMap;
@@ -21,8 +19,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 //TODO: 
 //Player usernames? xX_Noob_bot_Pwner69_Xx 
@@ -61,12 +62,15 @@ public class ExampleBot extends Bot {
     }
 
     private void moveRandomly(GameState gameState) {
+        ArrayList<Position> canSeePositions = canSee(gameState);
         ArrayList<Direction> diagonalDirections = new ArrayList<>();
         diagonalDirections.add(Direction.NORTHEAST);
         diagonalDirections.add(Direction.SOUTHEAST);
         diagonalDirections.add(Direction.SOUTHWEST);
         diagonalDirections.add(Direction.NORTHWEST);
+        
         for (Player player : gameState.getPlayers()) {
+
             boolean needNewDirection = !playerDirectionHashMap.containsKey(player.getId());
             if (home != null) {
                 needNewDirection = player.getPosition().equals(home.getPosition())
@@ -77,9 +81,14 @@ public class ExampleBot extends Bot {
                 ++counter;
                 Direction newDirection = diagonalDirections.get(index);
                 playerDirectionHashMap.put(player.getId(), newDirection);
-            // } else if (isMyPlayer(player) && !needNewDirection) {
-            //     Direction oldDirection = playerDirectionHashMap.get(playerID);
-            //     playerDirectionHashMap.put(playerID, oldDirection);
+            }
+            ArrayList<Position> positions = gameState.getMap().getSurroundingPositions(player.getPosition(), 9)
+                    .collect(Collectors.toCollection(ArrayList::new));
+            positions.removeAll(canSeePositions);
+            if (!positions.isEmpty()) {
+                Random random = new Random();
+                int rIndex = (random.nextInt(positions.size()));
+                playerDirectionHashMap.replace(player.getId(), gameState.getMap().directionsTowards(player.getPosition(), positions.get(rIndex)).findFirst().get());
             }
         }
     }
@@ -90,9 +99,6 @@ public class ExampleBot extends Bot {
         removeDeadPlayers(gameState);
         removeFood(gameState);
         findSpawnPoint(gameState);
-        for (Entry<Id, Position> food: claimedFoodHashMap.entrySet()){
-            System.out.println("Player Postion: " + findPlayerByID(gameState, food.getKey()).getPosition() + "\n" + "Food Position: " + food.getValue());
-        }
         gameStateLoggerBuilder.process(gameState);
         moveRandomly(gameState);
         fighting(gameState);
@@ -164,6 +170,28 @@ public class ExampleBot extends Bot {
             claimedFoodHashMap.remove(id);
         }
 
+    }
+
+    private ArrayList<Position> canSee(GameState gameState) {
+        ArrayList<Position> canSeePositions = new ArrayList<>();
+        for (Player player : gameState.getPlayers()) {
+            ArrayList<Position> positions = gameState.getMap().getSurroundingPositions(player.getPosition(), 8)
+                    .collect(Collectors.toCollection(ArrayList::new));
+            ;
+            for (Position p : positions) {
+                if (!canSeePositions.contains(p))
+                    canSeePositions.add(p);
+            }
+        }
+        return canSeePositions;
+    }
+
+    private Position futurePosition(GameState gameState, Position start, Direction direction) {
+        Position position = start;
+        for (int i = 0; i < 10; i++) {
+            position = gameState.getMap().getNeighbour(position, direction);
+        }
+        return position;
     }
 
     private boolean canMove(final GameState gameState, final Player player, final Direction direction) {
