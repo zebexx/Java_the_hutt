@@ -11,6 +11,9 @@ import com.scottlogic.hackathon.game.Id;
 import com.scottlogic.hackathon.game.Position;
 import com.scottlogic.hackathon.game.Collectable;
 import com.scottlogic.hackathon.game.SpawnPoint;
+
+import org.w3c.dom.css.Counter;
+
 import com.scottlogic.hackathon.game.Route;
 
 import java.util.HashMap;
@@ -28,8 +31,6 @@ import java.util.Map.Entry;
 //Cheatcodes???? 
 //was there a rule about not creating more class files? 
 
-// stop dancing!!!!! 
-// if going towards food is leading a player to the water, then ignore that food item.
 // if you get a new direction because the old one is leading you to the water, then stick to it.
 // if the diagonal directions are all going towards water, then go for non-diagonal directions?
 
@@ -58,19 +59,22 @@ public class ExampleBot extends Bot {
     }
 
     private void moveRandomly(GameState gameState) {
+        int counter = 0;
+        ArrayList<Direction> diagonalDirections = new ArrayList<>();
+        diagonalDirections.add(Direction.NORTHEAST);
+        diagonalDirections.add(Direction.NORTHWEST);
+        diagonalDirections.add(Direction.SOUTHEAST);
+        diagonalDirections.add(Direction.SOUTHWEST);
         for (Player player : gameState.getPlayers()) {
             Id playerID = player.getId();
-            if (isMyPlayer(player) && !playerDirectionHashMap.containsKey(playerID)) {
-                ArrayList<Direction> diagonalDirections = new ArrayList<>();
-                diagonalDirections.add(Direction.NORTHEAST);
-                diagonalDirections.add(Direction.NORTHWEST);
-                diagonalDirections.add(Direction.SOUTHEAST);
-                diagonalDirections.add(Direction.SOUTHWEST);
-                Random random = new Random();
-                int rIndex = (random.nextInt(diagonalDirections.size()));
-                Direction newDirection = diagonalDirections.get(rIndex);
-                playerDirectionHashMap.put(playerID, newDirection);
-            } else if (isMyPlayer(player)) {
+            boolean needNewDirection = player.getPosition().equals(home.getPosition())
+                    || !playerDirectionHashMap.containsKey(player.getId());
+            if (isMyPlayer(player) && needNewDirection) {
+                int index = counter % 4;
+                Direction newDirection = diagonalDirections.get(index);
+                playerDirectionHashMap.put(player.getId(), newDirection);
+                counter++;
+            } else if (isMyPlayer(player) && !needNewDirection) {
                 Direction oldDirection = playerDirectionHashMap.get(playerID);
                 playerDirectionHashMap.put(playerID, oldDirection);
             }
