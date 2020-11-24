@@ -279,35 +279,25 @@ public class ExampleBot extends Bot {
     private void fighting(GameState gameState) {
         for (Player player : gameState.getPlayers()) {
             if (isMyPlayer(player)) {
-                /* // destroys enemy spawnpoint
-                if (enemy != null) {
-                    if (gameState.getMap().distance(enemy.getPosition(), player.getPosition()) < 10) {
-                        
-                        Optional<Direction> direction = gameState.getMap().directionsTowards(player.getPosition(),
-                                enemy.getPosition()).findFirst();
-                        if (direction.isPresent()) {
-                            playerDirectionHashMap.put(player.getId(), direction.get());
-                        }
-                    }
-                } */
 
                 for (Player enemyP : gameState.getPlayers()) {
                     if (!isMyPlayer(enemyP)
-                            && gameState.getMap().distance(enemyP.getPosition(), player.getPosition()) < 10) {
+                            && gameState.getMap().distance(enemyP.getPosition(), player.getPosition()) < 10
+                            && checkRoute(gameState, player, enemyP.getPosition())) {
                         boolean alone = true;
                         int distanceToEnemy = gameState.getMap().distance(enemyP.getPosition(), player.getPosition());
 
                         for (Player friend : gameState.getPlayers()) {
                             if (isMyPlayer(friend) && gameState.getMap().distance(enemyP.getPosition(),
-                                    friend.getPosition()) <= distanceToEnemy) {
+                                    friend.getPosition()) == distanceToEnemy) {
                                 alone = false;
                                 break;
                             }
                         }
-
-                        // TODO: make sure that both the player & the friend go towards the same enemy +
+                        
+                        // Check to see how many enemies are close together
+                        // make sure that both the player & the friend go towards the same enemy +
                         // case where there's more than one enemy
-                        // check that they can both go towards the enemy (route)
 
                         if (alone) {
                             Optional<Direction> away = gameState.getMap()
