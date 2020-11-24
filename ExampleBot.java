@@ -12,7 +12,7 @@ import com.scottlogic.hackathon.game.Position;
 import com.scottlogic.hackathon.game.Collectable;
 import com.scottlogic.hackathon.game.SpawnPoint;
 
-import org.w3c.dom.css.Counter;
+
 
 import com.scottlogic.hackathon.game.Route;
 
@@ -52,6 +52,7 @@ public class ExampleBot extends Bot {
     private List<Position> nextPositions;
     private SpawnPoint home;
     private SpawnPoint enemy;
+    private int counter = 4;
 
     public ExampleBot(String name) {
         super(name);
@@ -59,21 +60,23 @@ public class ExampleBot extends Bot {
     }
 
     private void moveRandomly(GameState gameState) {
-        int counter = 0;
+        
         ArrayList<Direction> diagonalDirections = new ArrayList<>();
         diagonalDirections.add(Direction.NORTHEAST);
-        diagonalDirections.add(Direction.NORTHWEST);
         diagonalDirections.add(Direction.SOUTHEAST);
         diagonalDirections.add(Direction.SOUTHWEST);
+        diagonalDirections.add(Direction.NORTHWEST);
         for (Player player : gameState.getPlayers()) {
             Id playerID = player.getId();
             boolean needNewDirection = player.getPosition().equals(home.getPosition())
                     || !playerDirectionHashMap.containsKey(player.getId());
             if (isMyPlayer(player) && needNewDirection) {
+                System.out.println("Counter: " + counter);
                 int index = counter % 4;
+                ++counter;
+                System.out.println("Index: " + index);
                 Direction newDirection = diagonalDirections.get(index);
                 playerDirectionHashMap.put(player.getId(), newDirection);
-                counter++;
             } else if (isMyPlayer(player) && !needNewDirection) {
                 Direction oldDirection = playerDirectionHashMap.get(playerID);
                 playerDirectionHashMap.put(playerID, oldDirection);
@@ -86,7 +89,7 @@ public class ExampleBot extends Bot {
         nextPositions = new ArrayList<>();
         removeDeadPlayers(gameState);
         findSpawnPoint(gameState);
-        gameStateLoggerBuilder.withPlayers().withOutOfBounds().process(gameState);
+        gameStateLoggerBuilder.process(gameState);
         moveRandomly(gameState);
         //avoidPlayers(gameState);
         fighting(gameState);
