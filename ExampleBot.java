@@ -104,12 +104,9 @@ public class ExampleBot extends Bot {
             } else if (player != null) {
                 // Player needs to switch to another random direction to move
                 List<Direction> allDirections = Direction.randomisedValues();
-                allDirections.remove(direction);
                 Direction newDirection = direction; // initialise newDirection
                 for (Direction d : allDirections) {
-                    if (direction.equals(d)) {
-                        allDirections.remove(d);
-                    } else if (canMove(gameState, player, d)) {
+                    if (canMove(gameState, player, d)) {
                         newDirection = d;
                         break;
                     }
