@@ -15,6 +15,7 @@ import com.scottlogic.hackathon.game.Route;
 
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -26,17 +27,22 @@ import java.util.Map.Entry;
 //Teleportation????? 
 //Cheatcodes???? 
 //was there a rule about not creating more class files? 
+
+// stop dancing!!!!! 
+// if going towards food is leading a player to the water, then ignore that food item.
+// if you get a new direction because the old one is leading you to the water, then stick to it.
+// if the diagonal directions are all going towards water, then go for non-diagonal directions?
+
 //improve exploration 
+
 //fighting 
 // - run away in bad fight 
-// - run towards enemy if have more allies 
 // - attack enemy spawn point if no enemy players are on it 
 // - if home is destroyed 
 //      - stop collecting food 
-//      - group up and hunt enemies/enemy spawn point 
-// - defend spawnpoint? 
+//      - group up and hunt enemies/enemy spawn point
+// - defend spawnpoint?
 // - blocking enemies from areas? eg blocking gap between water (depends on map) 
-//destroy other spawnpoint 
 
 public class ExampleBot extends Bot {
 
@@ -78,7 +84,7 @@ public class ExampleBot extends Bot {
         findSpawnPoint(gameState);
         gameStateLoggerBuilder.withPlayers().withOutOfBounds().process(gameState);
         moveRandomly(gameState);
-        avoidPlayers(gameState);
+        //avoidPlayers(gameState);
         fighting(gameState);
         collectFood(gameState);
         attackEnemySpawnPoint(gameState);
@@ -161,7 +167,7 @@ public class ExampleBot extends Bot {
                     int distanceToFood = gameState.getMap().distance(player.getPosition(), food.getPosition());
 
                     if (distanceToFood < 10 && !(claimedFoodPositions.contains(food.getPosition()))) {
-                        if (closestDistanceToFood > distanceToFood) {
+                        if (closestDistanceToFood > distanceToFood && checkRoute(gameState, player, food.getPosition())) {
                             closestDistanceToFood = distanceToFood;
                             closestFood = food.getPosition();
                         }
@@ -171,12 +177,24 @@ public class ExampleBot extends Bot {
                 if (!(closestFood == null)) {
                     Optional<Direction> direction = gameState.getMap()
                             .directionsTowards(player.getPosition(), closestFood).findFirst();
-                    
+
                     if (direction.isPresent()) {
                         playerDirectionHashMap.put(player.getId(), direction.get());
                     }
                 }
             }
+        }
+    }
+    
+    private boolean checkRoute(GameState gameState, Player player, Position futurePosition) {
+        Set<Position> avoid = Collections.emptySet();
+        Optional<Route> route = gameState.getMap().findRoute(player.getPosition(), futurePosition, avoid);
+        avoid = gameState.getOutOfBoundsPositions();
+        if (route.isPresent()) {
+            boolean invalidRoute = route.get().collides(avoid);
+            return (!invalidRoute);
+        } else {
+            return false;
         }
     }
 
