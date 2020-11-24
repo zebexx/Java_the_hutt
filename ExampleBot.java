@@ -55,6 +55,8 @@ public class ExampleBot extends Bot {
     private SpawnPoint home;
     private SpawnPoint enemy;
     private int counter = 4;
+    
+    
 
     public ExampleBot(String name) {
         super(name);
