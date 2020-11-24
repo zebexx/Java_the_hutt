@@ -79,8 +79,9 @@ public class ExampleBot extends Bot {
         gameStateLoggerBuilder.withPlayers().withOutOfBounds().process(gameState);
         moveRandomly(gameState);
         avoidPlayers(gameState);
-        collectFood(gameState);
         fighting(gameState);
+        collectFood(gameState);
+        attackEnemySpawnPoint(gameState);
         List<Move> moves = extractMoves(gameState);
         return moves;
     }
@@ -158,27 +159,6 @@ public class ExampleBot extends Bot {
                 int closestDistanceToFood = 11;
                 for (Collectable food : gameState.getCollectables()) {
                     int distanceToFood = gameState.getMap().distance(player.getPosition(), food.getPosition());
-                    // try {
-                    // Optional<Route> route = gameState.getMap().findRoute(player.getPosition(),
-                    // food.getPosition(),
-                    // gameState.getOutOfBoundsPositions());
-                    // if (route.isPresent()) {
-                    // Route r = route.get();
-                    // int routeDistance = r.getLength();
-                    // if (distanceToFood < 10 &&
-                    // !(claimedFoodPositions.contains(food.getPosition()))) {
-                    // if (closestDistanceToFood > distanceToFood && routeDistance < 21) {
-                    // closestDistanceToFood = distanceToFood;
-                    // closestFood = food.getPosition();
-                    // }
-                    // }
-                    // }
-                    // else {
-                    // break;
-                    // }
-                    // }
-                    // catch (StackOverflowError s) {
-                    // }
 
                     if (distanceToFood < 10 && !(claimedFoodPositions.contains(food.getPosition()))) {
                         if (closestDistanceToFood > distanceToFood) {
@@ -191,11 +171,8 @@ public class ExampleBot extends Bot {
                 if (!(closestFood == null)) {
                     Optional<Direction> direction = gameState.getMap()
                             .directionsTowards(player.getPosition(), closestFood).findFirst();
-                    // Optional<Route> route = gameState.getMap().findRoute(player.getPosition(),
-                    // closestFood,
-                    // gameState.getOutOfBoundsPositions());
+                    
                     if (direction.isPresent()) {
-                        // Route r = route.get();
                         playerDirectionHashMap.put(player.getId(), direction.get());
                     }
                 }
@@ -260,10 +237,24 @@ public class ExampleBot extends Bot {
         }
     }
     
+    private void attackEnemySpawnPoint(GameState gameState) {
+        for (Player player : gameState.getPlayers()) {
+            if (isMyPlayer(player) && enemy != null) {
+                if (gameState.getMap().distance(enemy.getPosition(), player.getPosition()) < 10) {
+                    Optional<Direction> direction = gameState.getMap()
+                            .directionsTowards(player.getPosition(), enemy.getPosition()).findFirst();
+                    if (direction.isPresent()) {
+                        playerDirectionHashMap.put(player.getId(), direction.get());
+                    }
+                }
+            }
+        }
+    }
+
     private void fighting(GameState gameState) {
         for (Player player : gameState.getPlayers()) {
             if (isMyPlayer(player)) {
-                // destroys enemy spawnpoint
+                /* // destroys enemy spawnpoint
                 if (enemy != null) {
                     if (gameState.getMap().distance(enemy.getPosition(), player.getPosition()) < 10) {
                         
@@ -273,7 +264,7 @@ public class ExampleBot extends Bot {
                             playerDirectionHashMap.put(player.getId(), direction.get());
                         }
                     }
-                }
+                } */
 
                 for (Player enemyP : gameState.getPlayers()) {
                     if (!isMyPlayer(enemyP)
