@@ -70,25 +70,40 @@ public class ExampleBot extends Bot {
         diagonalDirections.add(Direction.NORTHWEST);
         
         for (Player player : gameState.getPlayers()) {
+            if (isMyPlayer(player)) {
+                boolean needNewDirection = !playerDirectionHashMap.containsKey(player.getId());
+                if (home != null) {
+                    needNewDirection = player.getPosition().equals(home.getPosition())
+                            || !playerDirectionHashMap.containsKey(player.getId());
+                }
+                if (needNewDirection) {
+                    int index = counter % 4;
+                    ++counter;
+                    Direction newDirection = diagonalDirections.get(index);
+                    playerDirectionHashMap.put(player.getId(), newDirection);
+                }
+                if (canSeePositions.contains(futurePosition(gameState, player.getPosition(), playerDirectionHashMap.get(player.getId())))) {
+                    ArrayList<Position> positions = gameState.getMap().getSurroundingPositions(player.getPosition(), 9)
+                            .collect(Collectors.toCollection(ArrayList::new));
+                    positions.removeAll(canSeePositions);
 
-            boolean needNewDirection = !playerDirectionHashMap.containsKey(player.getId());
-            if (home != null) {
-                needNewDirection = player.getPosition().equals(home.getPosition())
-                        || !playerDirectionHashMap.containsKey(player.getId());
-            }
-            if (isMyPlayer(player) && needNewDirection) {
-                int index = counter % 4;
-                ++counter;
-                Direction newDirection = diagonalDirections.get(index);
-                playerDirectionHashMap.put(player.getId(), newDirection);
-            }
-            ArrayList<Position> positions = gameState.getMap().getSurroundingPositions(player.getPosition(), 9)
-                    .collect(Collectors.toCollection(ArrayList::new));
-            positions.removeAll(canSeePositions);
-            if (!positions.isEmpty()) {
-                Random random = new Random();
-                int rIndex = (random.nextInt(positions.size()));
-                playerDirectionHashMap.replace(player.getId(), gameState.getMap().directionsTowards(player.getPosition(), positions.get(rIndex)).findFirst().get());
+                    if (!positions.isEmpty()) {
+                        ArrayList<Position> toRemove = new ArrayList<>();
+                        for (Position p : positions) {
+                            if (!checkRoute(gameState, player, p)) {
+                                toRemove.add(p);
+                            }
+                        }
+                        positions.removeAll(toRemove);
+
+                        if (!positions.isEmpty()) {
+                            Random random = new Random();
+                            int rIndex = (random.nextInt(positions.size()));
+                            playerDirectionHashMap.replace(player.getId(), gameState.getMap()
+                                    .directionsTowards(player.getPosition(), positions.get(rIndex)).findFirst().get());
+                        }
+                }
+                }
             }
         }
     }
@@ -175,12 +190,14 @@ public class ExampleBot extends Bot {
     private ArrayList<Position> canSee(GameState gameState) {
         ArrayList<Position> canSeePositions = new ArrayList<>();
         for (Player player : gameState.getPlayers()) {
-            ArrayList<Position> positions = gameState.getMap().getSurroundingPositions(player.getPosition(), 8)
-                    .collect(Collectors.toCollection(ArrayList::new));
-            ;
-            for (Position p : positions) {
-                if (!canSeePositions.contains(p))
-                    canSeePositions.add(p);
+            if (isMyPlayer(player)) {
+                ArrayList<Position> positions = gameState.getMap().getSurroundingPositions(player.getPosition(), 8)
+                        .collect(Collectors.toCollection(ArrayList::new));
+
+                for (Position p : positions) {
+                    if (!canSeePositions.contains(p))
+                        canSeePositions.add(p);
+                }
             }
         }
         return canSeePositions;
